@@ -1,5 +1,9 @@
 import pygame
 
+LEGAL_VECTORS = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1,), (-1, -1)]
+START_MARBLE_COUNT = 14
+TOTAL_SPACE_COUNT = 61
+
 class Board(object):
     """Holds all of the data about the board and preforms all actions relating to the board"""
 
@@ -10,22 +14,22 @@ class Board(object):
         self.size = size
         self.radius = radius
 
-        self.spacing_x = size[0] / 10
-        self.spacing_y = (size[1]* 0.866025403784) / 10 #hardcoded sqrt(3)/2 aka sin(pi/3)
-        self.offset_y = size[1] *  ((1-0.866025403784)/2)
+        self._spacing_x = size[0] / 10
+        self._spacing_y = (size[1]* 0.866025403784) / 10 #hardcoded sqrt(3)/2 aka sin(pi/3)
+        self._offset_y = size[1] *  ((1-0.866025403784)/2)
 
         #Initialize board
-        self.spaces = {}
+        self._spaces = {}
         for y in range(1, 10):
             start = y-4 if y-4 > 1 else 1
             end = y+4 if y+4 < 9 else 9
             for x in range(start, end+1):
                 if y<=2 or (y,x) in [(3,3), (3,4), (3,5)]: #Player 1
-                    self.spaces[y,x] = 0
+                    self._spaces[y,x] = 0
                 elif y>=8 or (y,x) in [(7,5), (7,6), (7,7)]: #Player 2
-                    self.spaces[y,x] = 1
+                    self._spaces[y,x] = 1
                 else: #Empty
-                    self.spaces[y,x] = 2
+                    self._spaces[y,x] = 2
 
         self.remaining = [14, 14]   
         self.game_over = False
@@ -48,12 +52,12 @@ class Board(object):
 
         y, x = coord
 
-        offset_x = (5-y) * (self.spacing_x/2)
+        offset_x = (5-y) * (self._spacing_x/2)
 
-        draw_y = int(self.size[1] - (self.spacing_y * y)) - self.offset_y #hardcoded sqrt(3)/2 aka sin(pi/3)
-        draw_x = int(self.spacing_x * x) + offset_x
+        draw_y = int(self.size[1] - (self._spacing_y * y)) - self._offset_y #hardcoded sqrt(3)/2 aka sin(pi/3)
+        draw_x = int(self._spacing_x * x) + offset_x
 
-        color = self.colors[self.spaces[coord]]
+        color = self.colors[self._spaces[coord]]
 
         pygame.draw.circle(surface, color, (draw_x, draw_y), self.radius)
         
@@ -70,12 +74,12 @@ class Board(object):
 
         if len(move) == 2:
             start, dest = move
-            vector = _sub_tuples(dest, start)
+            vector = sub_tuples(dest, start)
 
 
-            if vector != _normalize_tuple(vector) or vector==(0,0): return False
+            if vector != normalize_tuple(vector) or vector==(0,0): return False
             if (vector[0]!=0 and vector[1]!=0) and (vector[0]!=vector[1]): return False
-            if self.spaces[start] != color: return False
+            if self._spaces[start] != color: return False
 
             
             is_self = True
@@ -85,8 +89,8 @@ class Board(object):
             chain = [2]
 
             #Put the marbles in chain until an empty space or the edge is reached
-            while coord_in_board(current) and self.spaces[current]!=2:
-                current_marble = self.spaces[current]
+            while coord_in_board(current) and self._spaces[current]!=2:
+                current_marble = self._spaces[current]
                 
                 if current_marble == color:
                     self_count+=1
@@ -99,7 +103,7 @@ class Board(object):
                     is_self=False #Marks that we're now counting opponent marbles
                 
                 chain.append(current_marble)
-                current = _sum_tuples(current, vector)
+                current = sum_tuples(current, vector)
 
             #Check that the player has the force to push the other marbles and doesn't try to push too many
             if self_count-other_count < 1 or self_count>3: return False
@@ -112,28 +116,28 @@ class Board(object):
                 if not coord_in_board(current):
                     self._marble_removed(marble)
 
-                self.spaces[current] = marble
+                self._spaces[current] = marble
 
-                current = _sum_tuples(current, vector)
+                current = sum_tuples(current, vector)
 
 
         elif len(move) == 3:
             start, end, dest = move
-            chain_vector = _normalize_tuple(_sub_tuples(end, start))
-            vector = _sub_tuples(dest, start)
-            end = _sum_tuples(end, chain_vector)
+            chain_vector = normalize_tuple(sub_tuples(end, start))
+            vector = sub_tuples(dest, start)
+            end = sum_tuples(end, chain_vector)
 
             #Check for nonsense moves
             if vector==(0,0) or chain_vector==(0, 0): return False
-            if _normalize_tuple(vector) == chain_vector or _normalize_tuple(vector) != vector: return False
+            if normalize_tuple(vector) == chain_vector or normalize_tuple(vector) != vector: return False
             if (vector[0]!=0 and vector[1]!=0) and (vector[0]!=vector[1]): return False
 
             current = start
             chain = []
             #Put the marbles in the selected row into the chain
             while current!=end and coord_in_board(current):
-                current_marble = self.spaces[current]
-                current_dest = _sum_tuples(current, vector)
+                current_marble = self._spaces[current]
+                current_dest = sum_tuples(current, vector)
                 
 
                 #Check that the marble being picked up is of the right color
@@ -141,12 +145,12 @@ class Board(object):
                     return False
 
                 #Check that the destination for each given marble is valid
-                if not coord_in_board(current_dest) or self.spaces[current_dest]!=2:
+                if not coord_in_board(current_dest) or self._spaces[current_dest]!=2:
                     return False
 
 
                 chain.append(current_marble)
-                current = _sum_tuples(current, chain_vector)
+                current = sum_tuples(current, chain_vector)
 
             if len(chain)>3: return False
 
@@ -154,13 +158,13 @@ class Board(object):
             current = start
             for marble in chain:
                 
-                self.spaces[current] = 2
-                self.spaces[_sum_tuples(current, vector)] = marble
+                self._spaces[current] = 2
+                self._spaces[sum_tuples(current, vector)] = marble
 
-                if not coord_in_board(_sum_tuples(current, vector)):
+                if not coord_in_board(sum_tuples(current, vector)):
                     self._marble_removed(marble)
 
-                current = _sum_tuples(current, chain_vector)
+                current = sum_tuples(current, chain_vector)
 
         else:
             return False
@@ -174,8 +178,8 @@ class Board(object):
 
         game_state = {}
 
-        for key in self.spaces.keys():
-            game_state[key] = self.spaces[key]
+        for key in self._spaces.keys():
+            game_state[key] = self._spaces[key]
 
         return game_state
 
@@ -219,17 +223,21 @@ def coord_in_board_or_edge(coord):
 
     else: return False
 
+def get_adjacent_spaces(coord):
+    """Returns a list containing coordinates for all spaces immediately adjacent to the given coordinates"""
 
+    return list([sum_tuples(coord, vector) for vector in LEGAL_VECTORS])
+ 
     
-def _sum_tuples(a, b):
+def sum_tuples(a, b):
         """Sums all the entries in the given tuples"""
         return tuple(map(lambda x, y: x+y, a, b))
 
-def _sub_tuples(a, b):
+def sub_tuples(a, b):
     """Subtracts the entries in the given tuples"""
     return tuple(map(lambda x, y: x-y, a, b))
 
-def _normalize_tuple(a):
+def normalize_tuple(a):
     """Scales the each value in the tuple independently to either 1, -1, or 0"""
     return tuple(map(lambda x: 0 if x==0 else x//abs(x), a))
 
