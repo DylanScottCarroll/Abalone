@@ -14,7 +14,7 @@ The main class that represents the game and facilitates communication between th
 <br/>
 
 
-> **\_\_init\_\_(player1, player2, [viewscreen_size], [space_radius], [board_colors])** : Game
+> #### \_\_init\_\_(player1, player2, [viewscreen_size], [space_radius], [board_colors]) : Game
 >
 >Set all of the parameters of the game and returns the game object.
 
@@ -30,13 +30,13 @@ The main class that represents the game and facilitates communication between th
 <br/>
 
 >
-> **play()** : None
+> #### **play()** : None
 >
 > Plays an entire game of abalone until one player wins
 
 <br/>
 
-> **set_player(slot, new_player)** : None
+> #### **set_player(slot, new_player)** : None
 >
 > Replace the **player** in the given slot with the specified new player.
 
@@ -61,7 +61,7 @@ This is a class that handles the board state, the positions of the marbles, the 
 
 <br/>
 
->**\_\_init\_\_(size, radius, colors)** : Board
+> #### **\_\_init\_\_(size, radius, colors)** : Board
 >
 >Initializes the board given the specified parameters.
 
@@ -74,7 +74,7 @@ This is a class that handles the board state, the positions of the marbles, the 
 <br/>
 <br/>
 
-> **draw_board(surface)** : None
+> #### **draw_board(surface)** : None
 >
 > Draw the board to the screen
 >
@@ -83,7 +83,7 @@ This is a class that handles the board state, the positions of the marbles, the 
 <br/>
 <br/>
 
-> **make_move(move, color)** : bool
+> #### **make_move(move, color)** : bool
 >
 > Given the **move** as a list of tuples, preform that move. This method also checks if the move is legal or not. If the move is legal, it preforms it and returns True. Otherwise, the move is not preformed and False is returned.
 
@@ -96,7 +96,7 @@ This is a class that handles the board state, the positions of the marbles, the 
 <br/>
 <br/>
 
-> ### **Moves:**
+> #### **Moves:**
 > There are two types of moves. **Perpendicular** and **parallel**. 
 > **Parallel** moves are represented by a list of two coordinates. One coordinate represents the starting position, and the second coordinate represents the position that the marble at the starting position moves to. Any other marbles in the direction of the move are pushed.
 > **Perpendicular** moves are represented by a list of three coordinates. The first represents the start, the second represents the end, and the third represents the destination. All marbles in between and including the start and the end are moved so that the start marble lines up with the end marble
@@ -104,7 +104,7 @@ This is a class that handles the board state, the positions of the marbles, the 
 <br/>
 <br/>
 
->**get_game_state(self)** : dict[tuple : int ]
+> #### **get_game_state(self)** : dict[tuple : int ]
 >
 > Returns a copy of the game state as a dictionary where the keys are coordinate tuples, and the values are integers representing what is at that position. (0:player1, 1:player2, 2:empty) 
 
@@ -114,13 +114,13 @@ This is a class that handles the board state, the positions of the marbles, the 
 
 This is a class that is supposed to be inherited from and the main functions overwritten
 
-> **color**
+> #### **color**
 >
 > Holds the color of the player. Not to be modified by the player itself. Only modified by the **Game** object.
 
 <br/>
 
-> **get_move(self, game_state, screen, events, viewscreen_size, space_radius)** : list[tuple]
+> #### **get_move(self, game_state, screen, events, viewscreen_size, space_radius)** : list[tuple]
 >
 > This is the main function that needs to be implemented for a player. Given information about.
 > The expected return type is a list of tuples specified in the **make_move()** section of the Board documentation.
@@ -137,19 +137,19 @@ This is a class that is supposed to be inherited from and the main functions ove
 
 <br/>
 
-> **game_over(self, game_state, winner, moves)** : None
+> #### **game_over(self, game_state, winner, moves)** : None
 >
 > Preform any game-over tasks.
 > Not required. Use this to do logging, tallying, or maching learning or whatever.
 >
-> **game_state** and **winner** are described elsewhere in the documentation.
+>  **game_state** and **winner** are described elsewhere in the documentation.
 >
-> **moves** is a list of all of the moves that were taken throughout the game.
+>  **moves** is a list of all of the moves that were taken throughout the game.
 
 
 <br/>
 
-> **setup(self)** : None
+> #### **setup(self)** : None
 >
 > Preform any pre-game setup. Called before first the game after the player is first initialized. Also called in-between back-to-back games, so this method should totally reset all state. So the player can play a game fresh from start immediately.
 
@@ -167,7 +167,7 @@ Hit enter to send a move.
 
 ## Public Functions
 
->**coord_in_board(coord)** : bool
+> #### **coord_in_board(coord)** : bool
 >
 > Returns True if the given coordinate represents a space **on** the board. Otherwise returns False.
 >
@@ -175,16 +175,16 @@ Hit enter to send a move.
 
 <br/>
 
-> **coord_in_board_or_edge(coord)** : bool
+> #### **coord_in_board_or_edge(coord)** : bool
 >
 > Returns true if the given coordinate represents a space on the board **or** a space one step immediately off the board.
 >
-> **coord** is expected to be a two-tuple of integers.
+> #### **coord** is expected to be a two-tuple of integers.
 
 
 <br/>
 
-> **get_adjacent_spaces(coord)** : (int, int)
+> #### **get_adjacent_spaces(coord)** : (int, int)
 >
 > Returns a list of int two-tuple coordinates representing every position that is a single legal move away from the given coordinate.
 >
@@ -192,7 +192,7 @@ Hit enter to send a move.
 
 <br/>
 
-> **sum_tuples(a, b)** : tuple
+> #### **sum_tuples(a, b)** : tuple
 >
 > Add every corresponding element of **a** and **b** and returns the result.
 > **a** and **b** are expected to be number n-tuples of the same length.
@@ -201,7 +201,7 @@ Hit enter to send a move.
 
 <br/>
 
-> **sub_tuples(a, b)** : tuple
+> #### **sub_tuples(a, b)** : tuple
 >
 > **a** and **b** are expected to be number n-tuples of the same length.
 >
@@ -209,7 +209,7 @@ Hit enter to send a move.
 
 <br/>
 
-> **normalize_tuple(a)** : tuple
+> #### **normalize_tuple(a)** : tuple
 >
 > Scales each value in the given tuple *a*, such that each value is either -1, 0, or 1. All negative values become -1, all positive values become 1, and zeroes stay zero.
 > Expects integers, but floats might work. I'm not sure why you'd want to do that though.
@@ -222,7 +222,7 @@ Hit enter to send a move.
 
 Please don't change these, okay?
 
-> **LEGAL_VECTORS** = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1,), (-1, -1)]
+>  **LEGAL_VECTORS** = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1,), (-1, -1)]
 >
 > A list of all legal moves that can be made
 
