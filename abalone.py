@@ -4,6 +4,8 @@ LEGAL_VECTORS = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1,), (-1, -1)]
 START_MARBLE_COUNT = 14
 TOTAL_SPACE_COUNT = 61
 
+LOSE_THRESHOLD = 6
+
 class Board(object):
     """Holds all of the data about the board and preforms all actions relating to the board"""
 
@@ -24,6 +26,8 @@ class Board(object):
             start = y-4 if y-4 > 1 else 1
             end = y+4 if y+4 < 9 else 9
             for x in range(start, end+1):
+                #Isn't this code pretty? Well it works, so whatever.
+
                 if y<=2 or (y,x) in [(3,3), (3,4), (3,5)]: #Player 1
                     self._spaces[y,x] = 0
                 elif y>=8 or (y,x) in [(7,5), (7,6), (7,7)]: #Player 2
@@ -31,7 +35,7 @@ class Board(object):
                 else: #Empty
                     self._spaces[y,x] = 2
 
-        self.remaining = [14, 14]   
+        self.remaining = [START_MARBLE_COUNT, START_MARBLE_COUNT]   
         self.game_over = False
         self.winner = None 
         
@@ -72,6 +76,7 @@ class Board(object):
             if not coord_in_board_or_edge(coord):
                 return False
 
+        #Parallel moves
         if len(move) == 2:
             start, dest = move
             vector = sub_tuples(dest, start)
@@ -120,7 +125,7 @@ class Board(object):
 
                 current = sum_tuples(current, vector)
 
-
+        #Perpendicular moves
         elif len(move) == 3:
             start, end, dest = move
             chain_vector = normalize_tuple(sub_tuples(end, start))
@@ -191,10 +196,10 @@ class Board(object):
 
     def _check_winner(self):
 
-        if self.remaining[0]<=8:
+        if self.remaining[0]<= START_MARBLE_COUNT-LOSE_THRESHOLD:
             self.game_over = True
             self.winner = 1
-        elif self.remaining[1]<=8:
+        elif self.remaining[1]<= START_MARBLE_COUNT-LOSE_THRESHOLD :
             self.game_over = True
             self.winner = 0
 
