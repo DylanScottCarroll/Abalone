@@ -2,6 +2,8 @@
 
 A python program for playing the game abalone. Made specifically to be easily extended with custom AI players. This program handles all of the graphics, move-checking, scoring, and player handling. 
 
+To use this, all you'll really need to understand is the **Game** class which acts as a public interface for running the game, and the **Player** class, which is the class you inherit from in order to create new players.
+
 ---
 
 # Documentation
