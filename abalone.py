@@ -22,18 +22,16 @@ class Board(object):
 
         #Initialize board
         self._spaces = {}
-        for y in range(1, 10):
-            start = y-4 if y-4 > 1 else 1
-            end = y+4 if y+4 < 9 else 9
-            for x in range(start, end+1):
-                #Isn't this code pretty? Well it works, so whatever.
+        for x, y in all_coords():
+            #Isn't this code pretty? Well it works, so whatever.
 
-                if y<=2 or (y,x) in [(3,3), (3,4), (3,5)]: #Player 1
-                    self._spaces[y,x] = 0
-                elif y>=8 or (y,x) in [(7,5), (7,6), (7,7)]: #Player 2
-                    self._spaces[y,x] = 1
-                else: #Empty
-                    self._spaces[y,x] = 2
+            
+            if y<=2 or (y,x) in [(3,3), (3,4), (3,5)]: #Player 1
+                self._spaces[x,y] = 0
+            elif y>=8 or (y,x) in [(7,5), (7,6), (7,7)]: #Player 2
+                self._spaces[x,y] = 1
+            else: #Empty
+                self._spaces[x,y] = 2
 
         self.remaining = [START_MARBLE_COUNT, START_MARBLE_COUNT]   
         self.game_over = False
@@ -41,29 +39,19 @@ class Board(object):
         
     def draw_board(self, surface):
         """Draw the current board state to the given pygame surface"""
+
         surface.fill(self.colors[3])
 
-        for y in range(1, 10):
-            start = y-4 if y-4 > 1 else 1
-            end = y+4 if y+4 < 9 else 9
+        for x, y in all_coords():
+            offset_x = (5-y) * (self._spacing_x/2)
 
-            for x in range(start, end+1):
-                self._draw_space((y, x), surface)
+            draw_y = int(self.size[1] - (self._spacing_y * y)) - self._offset_y #hardcoded sqrt(3)/2 aka sin(pi/3)
+            draw_x = int(self._spacing_x * x) + offset_x
 
-    def _draw_space(self, coord, surface):
-        """only called by draw_board,
-        draws a single space to the given pygame surface"""
+            color = self.colors[self._spaces[(x, y)]]
 
-        y, x = coord
-
-        offset_x = (5-y) * (self._spacing_x/2)
-
-        draw_y = int(self.size[1] - (self._spacing_y * y)) - self._offset_y #hardcoded sqrt(3)/2 aka sin(pi/3)
-        draw_x = int(self._spacing_x * x) + offset_x
-
-        color = self.colors[self._spaces[coord]]
-
-        pygame.draw.circle(surface, color, (draw_x, draw_y), self.radius)
+            pygame.draw.circle(surface, color, (draw_x, draw_y), self.radius)
+        
         
     def make_move(self, move, color):
         """Preforms the given move if it is valid and legal.
@@ -118,10 +106,10 @@ class Board(object):
             current = start
             for marble in chain:
                 
-                if not coord_in_board(current):
+                if coord_in_board(current):
+                    self._spaces[current] = marble
+                else:
                     self._marble_removed(marble)
-
-                self._spaces[current] = marble
 
                 current = sum_tuples(current, vector)
 
@@ -150,9 +138,11 @@ class Board(object):
                     return False
 
                 #Check that the destination for each given marble is valid
-                if not coord_in_board(current_dest) or self._spaces[current_dest]!=2:
+                if not coord_in_board_or_edge(current_dest):
                     return False
 
+                if coord_in_board(current_dest) and self._spaces[current_dest]!=2:
+                    return False
 
                 chain.append(current_marble)
                 current = sum_tuples(current, chain_vector)
@@ -164,9 +154,11 @@ class Board(object):
             for marble in chain:
                 
                 self._spaces[current] = 2
-                self._spaces[sum_tuples(current, vector)] = marble
 
-                if not coord_in_board(sum_tuples(current, vector)):
+                dest_coord = sum_tuples(current, vector)
+                if coord_in_board(dest_coord):
+                    self._spaces[dest_coord] = marble
+                else:
                     self._marble_removed(marble)
 
                 current = sum_tuples(current, chain_vector)
@@ -232,19 +224,46 @@ def get_adjacent_spaces(coord):
     """Returns a list containing coordinates for all spaces immediately adjacent to the given coordinates"""
 
     return list([sum_tuples(coord, vector) for vector in LEGAL_VECTORS])
- 
-    
+
+def board_to_pixel_coords(coord, size):
+    #Given a coordinate of a board space, return a tuple containing the screen coordinates
+
+    y, x = coord
+
+    _spacing_x = size[0] / 10
+    _spacing_y = (size[1]* 0.866025403784) / 10 #hardcoded sqrt(3)/2 aka sin(pi/3)
+    _offset_y = size[1] *  ((1-0.866025403784)/2)
+
+    offset_x = (5-y) * (_spacing_x/2)
+
+    draw_y = int(size[1] - (_spacing_y * y)) - _offset_y
+    draw_x = int(_spacing_x * x) + offset_x
+
+    return (draw_x, draw_y)
+
+def all_coords():
+    """An iterator through all coordinate points on the board in row-major order. Coordinates expressed as (x, y) tuples."""
+
+    for y in range(1, 10):
+            start = y-4 if y-4 > 1 else 1
+            end = y+4 if y+4 < 9 else 9
+            for x in range(start, end+1):
+
+                yield (x, y)
+
 def sum_tuples(a, b):
         """Sums all the entries in the given tuples"""
         return tuple(map(lambda x, y: x+y, a, b))
 
 def sub_tuples(a, b):
-    """Subtracts the entries in the given tuples"""
+    """Subtracts the entries in the given tuples. a-b"""
     return tuple(map(lambda x, y: x-y, a, b))
 
 def normalize_tuple(a):
     """Scales the each value in the tuple independently to either 1, -1, or 0"""
     return tuple(map(lambda x: 0 if x==0 else x//abs(x), a))
+
+
 
 class Player(object):
     """A class that player types can inherit from"""
@@ -326,7 +345,7 @@ class Human_Player(Player):
 
         for i, selection in enumerate(self.selected):
             if selection is not None:
-                y, x = selection
+                x, y = selection
                 offset_x = (5-y) * (spacing_x/2)
                 draw_y = int(viewscreen_size[1] - (spacing_y * y)) - offset_y #hardcoded sqrt(3)/2 aka sin(pi/3)
                 draw_x = int(spacing_x * x) + offset_x
@@ -348,8 +367,8 @@ class Human_Player(Player):
         offset_y = viewscreen_size[1] *  ((1-0.866025403784)/2)
         
         space = None
-        for y in range(1, 10):
-            for x in range(1, 10):
+        for y in range(0, 11):
+            for x in range(0, 11):
                 
                 if coord_in_board_or_edge((x, y)):
                 
@@ -358,7 +377,7 @@ class Human_Player(Player):
                     draw_x = int(spacing_x * x) + offset_x
 
                     if (((draw_x - m_x)**2 + (draw_y - m_y)**2)**0.5) <= space_radius:
-                        return (y, x)
+                        return (x, y)
 
         return None
   
