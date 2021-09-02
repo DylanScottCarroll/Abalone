@@ -51,6 +51,12 @@ class Board(object):
             color = self.colors[self._spaces[(x, y)]]
 
             pygame.draw.circle(surface, color, (draw_x, draw_y), self.radius)
+
+        for color in (0, 1):
+            for i in range(START_MARBLE_COUNT - self.remaining[color]):
+                draw_x = i*self.radius*1.25 + self.radius
+                draw_y = self.size[0] - self.radius - (self.radius*color*1.25)
+                pygame.draw.circle(surface,  self.colors[color], (draw_x, draw_y), self.radius/2)
         
         
     def make_move(self, move, color):
@@ -195,18 +201,23 @@ class Board(object):
             self.game_over = True
             self.winner = 0
 
+    def force_winner(self):
+        """Declares a winner based on who is ahead"""
+
+        self.game_over = True
+        if self.remaining[0] == self.remaining[1]:
+            return 2
+        elif self.remaining[0] > self.remaining[1]:
+            return 0
+        else:
+            return 1
+
 def coord_in_board(coord):
-        """Returns true or false whether or not the given tuple is a valid board coordanite"""
+        """Returns true or false whether or not the given tuple is a valid board coordinate.
+        Assumes that the coordinate is an integer tuple with two values"""
+        x,y = coord
+        return (1<=x<=9) and (1<=y<=9) and (y-4 <= x <= y+4)
         
-        if type(coord)==tuple and len(coord)==2:
-            y, x = coord
-
-            if type(y)!=int or type(x)!=int: return False
-
-            return (1<=x<=9) and (1<=y<=9) and (y-4 <= x <= y+4)
-
-        else: return False
-
 def coord_in_board_or_edge(coord):
     """Returns true or false whether or not the given tuple is a valid board coordanite
     or if it is only one step away from a valid board coordinate"""
@@ -220,6 +231,13 @@ def coord_in_board_or_edge(coord):
 
     else: return False
 
+def coord_on_rim(coord):
+    """Returns true if the given tuple is a coordinate on the ottermost rims of spaces on the board"""
+
+    return coord in [(1,1), (2,1), (3,1), (4,1), (5,1), (6,2), (7,3), (8,4), (9,5), (9,6), (6,7), (9,8), 
+                     (9,9), (8,9), (7,9), (6,9), (5,9), (4,8), (3,7), (2,6), (1,5), (1,4), (1,3), (1,2)]
+
+
 def get_adjacent_spaces(coord):
     """Returns a list containing coordinates for all spaces immediately adjacent to the given coordinates"""
 
@@ -228,7 +246,7 @@ def get_adjacent_spaces(coord):
 def board_to_pixel_coords(coord, size):
     #Given a coordinate of a board space, return a tuple containing the screen coordinates
 
-    y, x = coord
+    x, y = coord
 
     _spacing_x = size[0] / 10
     _spacing_y = (size[1]* 0.866025403784) / 10 #hardcoded sqrt(3)/2 aka sin(pi/3)
@@ -267,6 +285,12 @@ def normalize_tuple(a):
 
 class Player(object):
     """A class that player types can inherit from"""
+
+    def __init__(self):
+        """Only called when the object is created in the beginning
+        Not called in between games because objects persist between games"""
+
+        pass
 
     def get_move(self, game_state, screen, events, viewscreen_size, space_radius):
         """Ask the player class to give the move it would play on the given game_state
@@ -399,7 +423,7 @@ class Game(object):
         pygame.init()
         self._screen = pygame.display.set_mode(viewscreen_size)
 
-    def play(self):
+    def play(self, max_moves):
         """Play an entire game of abalone until game over"""
 
 
@@ -425,12 +449,13 @@ class Game(object):
                 self._turn = int(not self._turn)
                 self._moves += 1
 
-                if self._board.game_over:
+                if self._board.game_over or self._moves > max_moves:
+                    self._board.force_winner()
                     game_state = self._board.get_game_state()
                     for player in self._players:
                         player.game_over(game_state, self._board.winner, self._moves)
-
-                    break
+                   
+                    return None
 
     def set_player(self, slot, new_player):
         """Slot is a 1 or a 2 depending on which player you want to replace"""
