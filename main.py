@@ -1,7 +1,8 @@
-from abalone import *     
+from abalone import *    
+from dylanai import Dylanai
 
 if __name__ == "__main__":
 
-    game = Game(Human_Player(), Human_Player())
+    game = Game(Human_Player(), Dylanai("P2", 2))
 
-    game.play()
+    game.play(10000)
