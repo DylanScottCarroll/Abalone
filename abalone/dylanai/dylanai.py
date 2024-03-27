@@ -37,7 +37,7 @@ class DylanAI(Player):
         rating, line, vector = self.propagate(game_state, True, None, 0, self.depth)
 
         print(line, vector)
-
+        print("copy", self.timer["copy"])
         return self.reformat_move(line, vector)
 
     def propagate(self, game_state, maximizing, max_hitherto, depth, max_depth):    
@@ -187,6 +187,7 @@ class DylanAI(Player):
             
             #Lay down the chain onto the new game state
             new_game_state = game_state.copy()
+
             current = start
             for marble in chain:
                 x,y = current

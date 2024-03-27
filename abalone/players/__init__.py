@@ -1,6 +1,6 @@
 from .player import Player
 from .human_player import HumanPlayer
-from .dylanai import DylanAI
+from ..dylanai.dylanai import DylanAI
 
 __all__ = [
     "Player",

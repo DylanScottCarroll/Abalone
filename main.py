@@ -3,7 +3,7 @@ from abalone import players
 
 if __name__ == "__main__":
 
-    game = abalone.Game(players.HumanPlayer(), players.DylanAI("P2", 5))
+    game = abalone.Game(players.HumanPlayer(), players.DylanAI("P2", 3))
 
     game.play(10000)
 
