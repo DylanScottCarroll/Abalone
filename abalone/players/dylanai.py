@@ -1,29 +1,17 @@
-from abalone.base import *
-import pygame, time
-from math import sqrt
+import pygame, time, abalone
 
+from math import sqrt
+from abalone.players import Player
 from timeit import default_timer as timer
 
-"""
-Moving : 7.858673799997695
-Rating : 28.77227359999978
-Listing : 38.87759160000001
-total : 39.5965058
-"""
 
-"""
-Moving : 9.286862499997891
-Rating : 43.87664679999953
-Listing : 55.58235909999994
-total : 56.537525800000004
-"""
-
-class Dylanai(Player):
+class DylanAI(Player):
     """Dylan's Abalone AI"""
 
     def __init__(self, name, depth):
         self.name = name
         self.depth = depth
+        self.timer = MultiTimer()
 
     def setup(self):
         
@@ -49,6 +37,7 @@ class Dylanai(Player):
         rating, line, vector = self.propagate(game_state, True, None, 0, self.depth)
 
         print(line, vector)
+
         return self.reformat_move(line, vector)
 
     def propagate(self, game_state, maximizing, max_hitherto, depth, max_depth):    
@@ -65,16 +54,18 @@ class Dylanai(Player):
 
         if depth >= max_depth:
             rating = self.rate_game_state(game_state)
+
             return (rating, None, None)
         
         else:
             
             color = self.color if maximizing else (1 if self.color==0 else 0)
             choices = []
-            for line in self.get_all_lines(game_state, color):
-                for vector in LEGAL_VECTORS:
-                    
-                
+
+            all_lines = self.get_all_lines(game_state, color)
+
+            for line in all_lines:
+                for vector in abalone.LEGAL_VECTORS:
                     new_game_state = self.get_new_game_state(game_state, line, vector, color)
 
                     if new_game_state is not None:
@@ -122,7 +113,7 @@ class Dylanai(Player):
         triples = []
 
         #Collect single 
-        for coord in all_coords():
+        for coord in abalone.all_coords():
             if game_state[coord] == current_color:
                 singles.append([coord])
 
@@ -130,18 +121,17 @@ class Dylanai(Player):
         for single in singles:
             for vector in [(1, 0), (0, 1), (1, 1)]:
 
-                coord = sum_tuples(single[0], vector)
-                if coord_in_board(coord) and game_state[ coord ] == current_color:
+                coord = abalone.sum_tuples(single[0], vector)
+                if abalone.coord_in_board(coord) and game_state[ coord ] == current_color:
                     doubles.append(single + [coord])
 
         #Add the the third marble in the row after the two unless it doesn't exist
         for double in doubles:
-            vector = sub_tuples(double[1], double[0])
-            coord = sum_tuples(double[1], vector)
+            vector = abalone.sub_tuples(double[1], double[0])
+            coord = abalone.sum_tuples(double[1], vector)
 
-            if coord_in_board(coord) and game_state[ coord ] == current_color:
+            if abalone.coord_in_board(coord) and game_state[ coord ] == current_color:
                 triples.append(double + [coord])
-
 
         return singles + doubles + triples
 
@@ -160,14 +150,13 @@ class Dylanai(Player):
                 parallel = True
 
 
-        if parallel:
-
+        if parallel:            
             #Find the rear marble in the motion
-            start = line[0] if sum_tuples(line[0], vector) == line[1] else line[-1]
+            start = line[0] if abalone.sum_tuples(line[0], vector) == line[1] else line[-1]
             end = line[-1] if start==line[0] else  line[0]
 
-            off_end = sum_tuples(end, vector)
-            if coord_in_board(off_end) and  game_state[off_end] == current_color: return None
+            off_end = abalone.sum_tuples(end, vector)
+            if abalone.coord_in_board(off_end) and  game_state[off_end] == current_color: return None
 
             counting_others = False
             self_count = 0
@@ -175,7 +164,7 @@ class Dylanai(Player):
             current = start
             chain = [2]
             #Put the marbles in chain until an empty space or the edge is reached
-            while coord_in_board(current) and game_state[current]!=2:
+            while abalone.coord_in_board(current) and game_state[current]!=2:
 
                 current_marble = game_state[current]
                 if current_marble == current_color:
@@ -193,7 +182,7 @@ class Dylanai(Player):
                 current = (current[0] + vector[0], current[1]+vector[1])
 
             #Check if ball is being pushed off
-            if not counting_others and not coord_in_board(current): 
+            if not counting_others and not abalone.coord_in_board(current): 
                 return None
             
             #Lay down the chain onto the new game state
@@ -208,7 +197,6 @@ class Dylanai(Player):
             return new_game_state
 
         else: #Perpendicular moves
-
             for coord in line:
                 move_coord = coord[0]+vector[0], coord[1]+vector[1]
                 
@@ -230,7 +218,6 @@ class Dylanai(Player):
             return new_game_state 
 
     def rate_game_state(self, game_state):
-        
 
         avg_center_dist = 0
         e_avg_center_dist = 0
@@ -243,7 +230,7 @@ class Dylanai(Player):
 
         enemy_color = 1 if self.color == 0 else 0
         
-        for coord in all_coords():
+        for coord in abalone.all_coords():
             
             x, y = coord
             #Calculate distance
@@ -251,7 +238,7 @@ class Dylanai(Player):
             if game_state[coord] == self.color: 
                 remaining += 1
 
-                if coord_on_rim(coord):on_rim += 1
+                if abalone.coord_on_rim(coord):on_rim += 1
 
                 current_dist = sqrt((0.866*y-4.33)**2 + (x-0.5*y-2.5)**2)
                 avg_center_dist += current_dist
@@ -259,7 +246,7 @@ class Dylanai(Player):
             elif game_state[coord] == enemy_color:
                 e_remaining += 1
 
-                if coord_on_rim(coord): e_on_rim += 1
+                if abalone.coord_on_rim(coord): e_on_rim += 1
 
                 current_dist = sqrt((0.866*y-4.33)**2 + (x-0.5*y-2.5)**2)
                 e_avg_center_dist += current_dist
@@ -275,11 +262,10 @@ class Dylanai(Player):
                 on_rim * self.on_rim_w + 
                 e_on_rim * self.e_on_rim_w )  
                     
-
     def reformat_move(self, line, vector):
         parallel = False
         for coord in line:
-            if sum_tuples(coord, vector) in line:
+            if abalone.sum_tuples(coord, vector) in line:
                 parallel = True
                 break
 
@@ -287,12 +273,12 @@ class Dylanai(Player):
 
         if parallel:
             #Find the rear marble in the motion
-            start = line[0] if len(line)==1 or sum_tuples(line[0], vector) == line[1] else line[-1]
+            start = line[0] if len(line)==1 or abalone.sum_tuples(line[0], vector) == line[1] else line[-1]
 
-            return (start, sum_tuples(start, vector))
+            return (start, abalone.sum_tuples(start, vector))
 
         else:
-            return (line[0], line[-1], sum_tuples(line[0], vector))
+            return (line[0], line[-1], abalone.sum_tuples(line[0], vector))
 
     def _display_lines(self, lines, screen, viewscreen_size):
         if self.selection >= len(lines): self.selection = 0
@@ -300,7 +286,7 @@ class Dylanai(Player):
 
         for coord in lines[self.selection]:
             print(coord)
-            pygame.draw.circle(screen, (255, 0, 0), board_to_pixel_coords(coord, viewscreen_size), 5 )
+            pygame.draw.circle(screen, (255, 0, 0), abalone.board_to_pixel_coords(coord, viewscreen_size), 5 )
 
 
         
@@ -324,7 +310,7 @@ class Dylanai(Player):
         spacing_y = (viewscreen_size[1]* 0.866025403784) / 10 #hardcoded sqrt(3)/2 aka sin(pi/3)
         offset_y = viewscreen_size[1] *  ((1-0.866025403784)/2)
 
-        for coord in all_coords():
+        for coord in abalone.all_coords():
             x, y = coord
 
             offset_x = (5-y) * (spacing_x/2)
@@ -347,7 +333,7 @@ class Game_State(object):
     def __init__(self, game_state = None):
         if game_state != None:
             self.slots = []
-            for coord in all_coords():
+            for coord in abalone.all_coords():
                 self.slots.append( game_state[coord] )
 
     def __getitem__(self, coord):
@@ -376,7 +362,7 @@ class Game_State(object):
         newGameState.slots = self.slots.copy()
         return newGameState
 
-class Multi_Timer():
+class MultiTimer():
     def __init__(self):
         self.last_starts = {}
         self.total_times = {}

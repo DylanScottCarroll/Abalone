@@ -1,4 +1,6 @@
 import pygame
+import abalone
+from abalone import players
 
 LEGAL_VECTORS = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1,), (-1, -1)]
 START_MARBLE_COUNT = 14
@@ -282,130 +284,6 @@ def normalize_tuple(a):
     """Scales the each value in the tuple independently to either 1, -1, or 0"""
     return tuple(map(lambda x: 0 if x==0 else x//abs(x), a))
 
-
-
-class Player():
-    """A class that player types can inherit from"""
-
-    def __init__(self):
-        """Only called when the object is created in the beginning
-        Not called in between games because objects persist between games"""
-
-        pass
-
-    def get_move(self, game_state, screen, events, viewscreen_size, space_radius):
-        """Ask the player class to give the move it would play on the given game_state
-            
-            game_state is a dictionary {(x, y), space}, where space is an integer representing the color, (0:player1, 1:player2, 2:empty)
-            screen is the pygame display surface
-            events are the pygame events that happened in the last frame
-            viewscreen_size is the size of the pygame surface that the board is being drawn to
-            space_radius is the radius of the spaces
-            
-            Either:
-                Returns a tuple in the valid move format.
-                Returns None if another render frame is needed to make a decision. Mostly for human players"""
-        
-        raise NotImplementedError("Please implement the get_move method.")
-        return None
-
-    def game_over(self, game_state, winner, moves):
-        """Preform any game-over tasks. 
-        Not required. Use this to do logging, tallying, or maching learning or whatever.
-        
-        game_state is a dictionary {(x, y), space}, where space is an integer representing the color, (0:player1, 1:player2, 2:empty)
-        winner is the color of the winner (0:player1, 1:player2)"""
-
-
-        pass
-
-    def reset(self, color):
-        """Don't overwrite this please.
-        This is just for the game object to reset the player fields it needs to read.
-        Calls setup()"""
-        
-        self.color = color
-        self.setup()
-
-
-    def setup(self):
-        """Reset the state of the player back to default
-            This method called before anything else, so use it to preform initialization"""
-        
-        raise NotImplementedError("Please implement the setup method.")
-              
-class Human_Player(Player):
-    def setup(self):
-        self.selected = []
-    
-    def get_move(self, game_state, screen, events, viewscreen_size, space_radius):
-        
-        #Detect player input
-        for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    #Modify the selected list based on where the key press was
-                    coord = self._find_nearest_space(event.pos[0], event.pos[1], viewscreen_size, space_radius)
-                    if coord is None:
-                        self.selected = []
-                    elif coord in self.selected:
-                        self.selected.remove(coord)
-                    else:
-                        self.selected.append(coord)
-                        if len(self.selected) > 3:
-                            del self.selected[0]
-
-            elif event.type == pygame.KEYDOWN:
-                #If enter is pressed, return the selected as a tuple to make the move.
-                if event.key == pygame.K_RETURN:
-                    move = tuple(self.selected)
-                    self.selected = []
-                    return move
-        
-        #Draw the current state of the selection onto the board
-
-        spacing_x = viewscreen_size[0] / 10
-        spacing_y = (viewscreen_size[1]* 0.866025403784) / 10 #hardcoded sqrt(3)/2 aka sin(pi/3)
-        offset_y = viewscreen_size[1] *  ((1-0.866025403784)/2)
-
-        for i, selection in enumerate(self.selected):
-            if selection is not None:
-                x, y = selection
-                offset_x = (5-y) * (spacing_x/2)
-                draw_y = int(viewscreen_size[1] - (spacing_y * y)) - offset_y #hardcoded sqrt(3)/2 aka sin(pi/3)
-                draw_x = int(spacing_x * x) + offset_x
-
-                color = (0, 0, 255) if i==len(self.selected)-1>0 else (255, 0, 0)
-
-                pygame.draw.circle(screen, color, (draw_x, draw_y), space_radius, int(space_radius*0.2))
-
-
-        #No move was made. Wait until next frame
-        return None
-
-    def _find_nearest_space(self, m_x, m_y, viewscreen_size, space_radius):
-        """Finds the nearest space to the given mouse coordinates"""
-        #I know this isn't optimized, but it runs so infrequently that it would be a waste of time to optimize it at all.
-
-        spacing_x = viewscreen_size[0] / 10
-        spacing_y = (viewscreen_size[1]* 0.866025403784) / 10 #hardcoded sqrt(3)/2 aka sin(pi/3)
-        offset_y = viewscreen_size[1] *  ((1-0.866025403784)/2)
-        
-        space = None
-        for y in range(0, 11):
-            for x in range(0, 11):
-                
-                if coord_in_board_or_edge((x, y)):
-                
-                    offset_x = (5-y) * (spacing_x/2)
-                    draw_y = int(viewscreen_size[1] - (spacing_y * y)) - offset_y
-                    draw_x = int(spacing_x * x) + offset_x
-
-                    if (((draw_x - m_x)**2 + (draw_y - m_y)**2)**0.5) <= space_radius:
-                        return (x, y)
-
-        return None
-  
 class Game(object):
     """Controls the entire game.
         Acts as a mediator between the board, the graphics, and the players"""
@@ -463,7 +341,7 @@ class Game(object):
         if slot not in (1, 2):
             raise ValueError("Slot must be either 1 or 2.") 
         
-        if not isinstance(new_player, Player):
+        if not isinstance(new_player, players.Player):
             raise TypeError("new_player must inherit from Player.") 
 
         self._players[slot-1]
